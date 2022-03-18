@@ -36,10 +36,13 @@ void Saper::revealCell(SaperCell* cell)
 	if (!cell->hidden || cell->flagged)
 		return;
 
+	if (!mInGame)
+		startGame(cell);
+
 	cell->hidden = false;
 
 	if (cell->type == SaperCell::Type::CELL_EMPTY)
-		revealNeighboringCells(cell);
+		revealNeighbors(cell);
 }
 
 void Saper::flagCell(SaperCell* cell)
@@ -48,73 +51,63 @@ void Saper::flagCell(SaperCell* cell)
 	if (!cell->hidden)
 		return;
 
-	if (cell->flagged) {
-		cell->flagged = false;
-	}
-	else {
-		cell->flagged = true;
-	}
+	cell->flagged = !cell->flagged;
 }
 
-void Saper::placeBombs(unsigned int seed)
-{
-	uint16_t bombCount = mBoard.size() * mBombRatio;
-	std::unordered_set<uint16_t> bombCoords;
-
-	srand(seed);
-	while (bombCoords.size() < bombCount) {
-		auto rolled = rand() % mBoard.size();
-		bombCoords.insert(rolled);
-	}
-
-	SaperCell* cell = nullptr;
-	SaperCell* neighbour = nullptr;
-	for (const auto& coord : bombCoords) {
-		cell = &mBoard[coord];
-		cell->type = SaperCell::Type::CELL_BOMB;
-
-		for (int dy = -1; dy <= 1; dy++) {
-			for (int dx = -1; dx <= 1; dx++) {
-				if (dx == 0 && dy == 0)
-					continue;
-
-				int x = cell->col + dx;
-				int y = cell->row + dy;
-
-				if (0 <= x && x < mWidth && 0 <= y && y < mHeight) {
-					uint16_t i = y * mWidth + x;
-
-					neighbour = &mBoard[i];
-					if (neighbour->type != SaperCell::Type::CELL_BOMB)
-						neighbour->type = (SaperCell::Type)((int)neighbour->type + 1);
-				}
-			}
-		}
-	}
-
-}
-
-void Saper::createBoard() 
+void Saper::createBoard()
 {
 	// TODO: initialize board only after first reveal so bombs dont appear under first pick
-	mBoard = std::vector<SaperCell>(mWidth * mHeight);
+	mBoard = vector<SaperCell>(mWidth * mHeight);
 
 	uint8_t col = 0;
 	uint8_t row = 0;
-	for (auto &cell : mBoard) {
+	for (auto& cell : mBoard) {
 		cell.col = col;
 		cell.row = row;
 
 		++col %= mWidth;
 		row += col == 0;
 	}
-
-	placeBombs(time(0));
 }
 
-void Saper::revealNeighboringCells(SaperCell* cell)
+void Saper::startGame(SaperCell* startingCell)
 {
-	SaperCell* neighbour = nullptr;
+	unordered_set<SaperCell*> excludedCells = getNeighbors(startingCell);
+	excludedCells.insert(startingCell);
+
+	placeBombs(time(0), excludedCells);
+
+	mInGame = true;
+}
+
+void Saper::placeBombs(unsigned int seed, unordered_set<SaperCell*> excluded)
+{
+	uint16_t bombCount = mBoard.size() * mBombRatio + excluded.size();
+	unordered_set<SaperCell*> bombCells = excluded;
+
+	srand(seed);
+	while (bombCells.size() < bombCount) {
+		auto rolled = rand() % mBoard.size();
+		bombCells.insert(&mBoard[rolled]);
+	}
+
+	for (const auto ex : excluded)
+		bombCells.erase(ex);
+
+	for (const auto cell : bombCells) {
+		cell->type = SaperCell::Type::CELL_BOMB;
+
+		for (const auto neighbor : getNeighbors(cell)) {
+			if (neighbor->type != SaperCell::Type::CELL_BOMB)
+				neighbor->type = (SaperCell::Type)((int)neighbor->type + 1);
+		}
+	}
+
+}
+
+unordered_set<SaperCell*> Saper::getNeighbors(SaperCell* cell) 
+{
+	unordered_set<SaperCell*> neighbors;
 
 	for (int dy = -1; dy <= 1; dy++) {
 		for (int dx = -1; dx <= 1; dx++) {
@@ -126,12 +119,16 @@ void Saper::revealNeighboringCells(SaperCell* cell)
 
 			if (0 <= x && x < mWidth && 0 <= y && y < mHeight) {
 				uint16_t i = y * mWidth + x;
-				neighbour = &mBoard[i];
-
-				revealCell(neighbour);
+				neighbors.insert(&mBoard[i]);
 			}
 		}
 	}
 
-	neighbour = nullptr;
+	return neighbors;
+}
+
+void Saper::revealNeighbors(SaperCell* cell)
+{
+	for (auto neighbour : getNeighbors(cell))
+		revealCell(neighbour);
 }

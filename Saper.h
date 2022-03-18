@@ -3,6 +3,9 @@
 #include <unordered_set>
 #include <vector>
 
+using std::unordered_set;
+using std::vector;
+
 struct SaperCell {
 
 	static enum class Type {
@@ -35,6 +38,8 @@ public:
 	uint8_t width() { return mWidth; }
 	uint8_t height() { return mHeight; }
 	uint16_t size() { return mWidth * mHeight; }
+	bool inGame() { return mInGame; }
+
 
 	SaperCell* getCell(uint16_t i);
 	SaperCell* getCell(uint8_t x, uint8_t y);
@@ -44,14 +49,16 @@ public:
 
 private:
 	void createBoard();
-	void placeBombs(unsigned int seed);
+	void startGame(SaperCell* startingCell);
+	void placeBombs(unsigned int seed, unordered_set<SaperCell*> excludedIndex);
 
-	void revealNeighboringCells(SaperCell* cell);
+	unordered_set<SaperCell*> getNeighbors(SaperCell* cell);
+	void revealNeighbors(SaperCell* cell);
 
 private:
 	uint8_t mWidth, mHeight;
 	float mBombRatio = 0.15;
-	std::vector<SaperCell> mBoard;
+	vector<SaperCell> mBoard;
 
 	bool mInGame = false;
 };
