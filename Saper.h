@@ -1,26 +1,25 @@
 #pragma once
-#include <SDL.h>
-
-#include <vector>
+#include <iostream>
 #include <unordered_set>
+#include <vector>
 
-enum class CellType {
-	CELL_EMPTY,
-	CELL_NEAR1,
-	CELL_NEAR2,
-	CELL_NEAR3,
-	CELL_NEAR4,
-	CELL_NEAR5,
-	CELL_NEAR6,
-	CELL_NEAR7,
-	CELL_NEAR8,
-	CELL_BOMB
-};
+struct SaperCell {
 
-struct Cell {
+	static enum class Type {
+		CELL_EMPTY = 0,
+		CELL_NEAR1,
+		CELL_NEAR2,
+		CELL_NEAR3,
+		CELL_NEAR4,
+		CELL_NEAR5,
+		CELL_NEAR6,
+		CELL_NEAR7,
+		CELL_NEAR8,
+		CELL_BOMB
+	};
+
 	uint8_t col, row;
-	CellType type = CellType::CELL_EMPTY;
-	SDL_Rect rect;
+	Type type = Type::CELL_EMPTY;
 
 	bool hidden = true;
 	bool flagged = false;
@@ -30,39 +29,29 @@ class Saper {
 public:
 	Saper(const uint8_t w, const uint8_t h);
 	Saper(const uint8_t s);
-
-	int run();
+	~Saper();
 
 public:
+	uint8_t width() { return mWidth; }
+	uint8_t height() { return mHeight; }
+	uint16_t size() { return mWidth * mHeight; }
+
+	SaperCell* getCell(uint16_t i);
+	SaperCell* getCell(uint8_t x, uint8_t y);
+
+	void revealCell(SaperCell* cell);
+	void flagCell(SaperCell* cell);
 
 private:
-	bool initSDL(void);
-	void initBoard();
-	void placeBombs(float bombRatio);
+	void createBoard();
+	void placeBombs(unsigned int seed);
 
-	void gameloop();
-	bool handleInput(SDL_Event* event);
-	void render();
-
-	void onMouseUp(SDL_MouseButtonEvent* event);
-	void onMouseDown(SDL_MouseButtonEvent* event);
-
-	Cell* getHoveredCell();
-	void revealCell(Cell* cell);
-	void revealNeighboringCells(Cell* cell);
-	void flagCell(Cell* cell);
-
-	uint32_t getCellColor(Cell* cell);
-	void renderCell(Cell* cell);
-	void renderCellLabel(Cell* cell);
-	void renderBoard();
-
-	void shutdown();
+	void revealNeighboringCells(SaperCell* cell);
 
 private:
 	uint8_t mWidth, mHeight;
-	std::vector<Cell> mBoard;
+	float mBombRatio = 0.15;
+	std::vector<SaperCell> mBoard;
 
-	SDL_Window* mWindow = nullptr;
-	SDL_Renderer* mRenderer = nullptr;
+	bool mInGame = false;
 };

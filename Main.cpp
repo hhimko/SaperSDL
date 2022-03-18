@@ -1,8 +1,6 @@
-#include "Saper.h"
+#include "App.h"
 
 int main(int argc, char* args[]) {
-	auto app = Saper(15);
-	int result = app.run();
-
-	return result;
+	auto app = App();
+	return app.run();
 };
