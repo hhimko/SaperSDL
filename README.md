@@ -1,5 +1,5 @@
 # SaperSDL
-Basic C++ Minesweeper implementation in pure SDL2.0.
+Basic C++ Minesweeper implementation in pure SDL2.
 
 dependencies: 
- - [SDL 64-bit](https://www.libsdl.org/download-2.0.php)
+ - [SDL 2.0 64-bit](https://www.libsdl.org/download-2.0.php)
